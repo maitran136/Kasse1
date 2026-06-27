@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#3E5826">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kasse">
+<title>Kasse · Đồ uống</title>
+<link rel="apple-touch-icon" href="">
+<link rel="manifest" href="">
+<style>
+  :root{
+    --paper:#F7F4EC; --paper2:#EFEAD9; --ink:#23291E; --inkSoft:#5C6450;
+    --matcha:#5B7B3A; --matchaDeep:#3E5826; --matchaSoft:#E5EDD7;
+    --honey:#D89A2E; --line:#E0D9C6; --white:#FFFFFF; --danger:#B4533A; --dangerBg:#F6E3DD;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--paper);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    overscroll-behavior:none;
+  }
+  .tnum{font-variant-numeric:tabular-nums}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  input,select{font-family:inherit;font-size:16px}
+  .pop{transition:transform .08s ease}
+  .pop:active{transform:scale(.96)}
+  input::placeholder{color:var(--inkSoft);opacity:.6}
+
+  /* Header */
+  header{
+    background:var(--matchaDeep);color:var(--paper);
+    position:sticky;top:0;z-index:20;
+    padding:max(env(safe-area-inset-top),14px) 20px 14px;
+  }
+  .hrow{display:flex;align-items:center;justify-content:space-between;max-width:880px;margin:0 auto;gap:10px}
+  .brand{display:flex;align-items:center;gap:10px}
+  .logo{width:38px;height:38px;border-radius:12px;background:var(--matchaSoft);color:var(--matchaDeep);
+    display:grid;place-items:center;font-size:20px}
+  .brand h1{font-size:20px;font-weight:800;letter-spacing:-.01em;line-height:1.05}
+  .brand small{font-size:12px;color:var(--matchaSoft)}
+  .tabs{display:flex;gap:4px;padding:4px;border-radius:12px;background:rgba(255,255,255,.10)}
+  .tab{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:9px;
+    font-size:14px;font-weight:700;color:var(--paper)}
+  .tab.active{background:var(--paper);color:var(--matchaDeep)}
+  .tab .lbl{display:none}
+  @media(min-width:560px){.tab .lbl{display:inline}}
+
+  main{max-width:880px;margin:0 auto;padding:16px 16px 120px}
+
+  /* Nhóm + lưới sản phẩm */
+  .group{margin-bottom:20px}
+  .group-h{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+  .group-h span{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--matchaDeep)}
+  .group-h .rule{flex:1;height:1px;background:var(--line)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+  .prod{position:relative;background:var(--white);border:1.5px solid var(--line);border-radius:18px;
+    padding:14px;text-align:left;display:flex;flex-direction:column;gap:8px;min-height:112px}
+  .prod.active{background:var(--matchaSoft);border-color:var(--matcha)}
+  .prod .emo{font-size:30px;line-height:1}
+  .prod .nm{font-weight:700;font-size:15px;line-height:1.25}
+  .prod .pr{margin-top:auto;font-weight:800;color:var(--matchaDeep)}
+  .prod .badge{position:absolute;top:8px;right:8px;background:var(--matcha);color:#fff;
+    width:24px;height:24px;border-radius:999px;display:grid;place-items:center;font-size:12px;font-weight:800}
+
+  /* Thanh dưới */
+  .bar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--matcha);color:#fff;
+    border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+  .bar.off{background:var(--paper2);color:var(--inkSoft)}
+  .bar-in{max-width:880px;margin:0 auto;padding:16px 20px;display:flex;align-items:center;justify-content:space-between}
+  .bar-l{display:flex;align-items:center;gap:10px;font-weight:700}
+  .bar .cbadge{position:relative}
+  .bar .cbadge i{position:absolute;top:-8px;right:-8px;background:var(--honey);color:var(--ink);
+    width:20px;height:20px;border-radius:999px;display:grid;place-items:center;font-size:11px;font-weight:800;font-style:normal}
+  .bar .sum{font-size:21px;font-weight:800}
+
+  /* Sheet */
+  .overlay{position:fixed;inset:0;z-index:30;background:rgba(35,41,30,.45);opacity:0;
+    pointer-events:none;transition:opacity .2s ease}
+  .overlay.open{opacity:1;pointer-events:auto}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--paper);
+    border-radius:24px 24px 0 0;box-shadow:0 -8px 40px rgba(0,0,0,.25);
+    transform:translateY(110%);transition:transform .28s cubic-bezier(.22,1,.36,1);
+    max-height:88vh;display:flex;flex-direction:column}
+  .sheet.open{transform:translateY(0)}
+  @media(prefers-reduced-motion:reduce){.sheet{transition:none}}
+  .sheet-in{max-width:640px;width:100%;margin:0 auto;display:flex;flex-direction:column;min-height:0;flex:1}
+  .grab{width:40px;height:6px;border-radius:999px;background:var(--line);margin:12px auto 10px}
+  .sheet-h{display:flex;align-items:center;justify-content:space-between;padding:0 20px 8px}
+  .sheet-h h2{font-size:18px;font-weight:800}
+  .sheet-h .acts{display:flex;align-items:center;gap:4px}
+  .ghost{display:flex;align-items:center;gap:5px;font-size:14px;font-weight:600;padding:6px 10px;border-radius:9px;color:var(--danger)}
+  .xbtn{padding:8px;border-radius:9px;background:var(--paper2)}
+  .lines{overflow-y:auto;padding:0 20px;flex:1;min-height:0}
+  .line{display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--line);
+    border-radius:16px;background:var(--white);margin-bottom:8px}
+  .line .emo{font-size:24px}
+  .line .info{flex:1;min-width:0}
+  .line .info .nm{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .line .info .sub{font-size:14px;color:var(--inkSoft)}
+  .step{display:flex;align-items:center;gap:6px}
+  .sbtn{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:var(--paper2);font-size:18px;font-weight:700}
+  .sbtn.pri{background:var(--matcha);color:#fff}
+  .step .q{width:24px;text-align:center;font-weight:800}
+  .empty{padding:40px 0;text-align:center;color:var(--inkSoft)}
+
+  .pay{padding:12px 20px 0;border-top:1px solid var(--line)}
+
+  /* Chọn hình thức thanh toán */
+  .paymethod{display:flex;gap:8px;padding:12px 20px 0}
+  .pm{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:12px;border-radius:14px;
+    font-weight:800;border:1.5px solid var(--line);background:var(--white);color:var(--inkSoft)}
+  .pm .ic{font-size:18px}
+  .pm.on{border-color:var(--matcha);background:var(--matchaSoft);color:var(--matchaDeep)}
+  .pm.on.pp{border-color:#0070BA;background:#E6F0FA;color:#0a4f86}
+  .paypal-note{display:flex;align-items:center;gap:8px;margin:0 20px 12px;padding:12px 16px;border-radius:12px;
+    background:#E6F0FA;color:#0a4f86;font-weight:700}
+
+  .tag{font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px}
+  .tag.bar{background:var(--matchaSoft);color:var(--matchaDeep)}
+  .tag.pp{background:#E6F0FA;color:#0a4f86}
+  .pay-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .pay-h .lbl{color:var(--inkSoft)}
+  .quick{display:flex;gap:6px}
+  .qbtn{padding:5px 10px;border-radius:9px;font-size:14px;font-weight:700;background:var(--matchaSoft);color:var(--matchaDeep)}
+  .payin{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+  .payin input{flex:1;padding:12px 16px;border-radius:12px;border:1.5px solid var(--line);
+    background:var(--white);color:var(--ink);font-size:18px;font-weight:800;outline:none}
+  .payin .eu{font-size:18px;font-weight:800;color:var(--inkSoft)}
+  .change{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-radius:12px;
+    background:var(--matchaSoft);color:var(--matchaDeep);margin-bottom:12px;font-weight:700}
+  .change.neg{background:var(--dangerBg);color:var(--danger)}
+  .change b{font-size:18px}
+  .foot{padding:4px 20px max(env(safe-area-inset-bottom),20px)}
+  .total-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .total-row .t{font-size:18px;font-weight:700}
+  .total-row .v{font-size:24px;font-weight:800;color:var(--matchaDeep)}
+  .complete{width:100%;padding:16px;border-radius:18px;font-weight:800;font-size:18px;
+    display:flex;align-items:center;justify-content:center;gap:8px;background:var(--honey);color:var(--ink)}
+  .complete:disabled{background:var(--paper2);color:var(--inkSoft)}
+
+  /* Menu editor */
+  .card{background:var(--white);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:16px}
+  .card h3{font-weight:800;margin-bottom:12px}
+  .field{display:flex;gap:8px;margin-bottom:8px}
+  .field input,.field select{padding:10px 12px;border-radius:12px;border:1.5px solid var(--line);
+    background:var(--paper);color:var(--ink);outline:none;width:100%}
+  .emoin{width:56px;text-align:center;font-size:20px;flex:none}
+  .pricebox{display:flex;align-items:center;gap:6px;flex:1;padding:0 12px;border-radius:12px;
+    border:1.5px solid var(--line);background:var(--paper)}
+  .pricebox input{border:none;background:none;padding:10px 0;font-weight:700}
+  .pricebox .eu{color:var(--inkSoft)}
+  .addbtn{padding:0 18px;border-radius:12px;font-weight:800;background:var(--matcha);color:#fff;
+    display:flex;align-items:center;gap:6px;white-space:nowrap}
+  .mrow{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);
+    border-radius:16px;background:var(--white);margin-bottom:8px}
+  .mrow .emo{font-size:24px}
+  .mrow .info{flex:1;min-width:0}
+  .mrow .info .nm{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mrow .info .cat{font-size:12px;color:var(--inkSoft)}
+  .mrow .pr{font-weight:800;color:var(--matchaDeep)}
+  .iconbtn{padding:8px;border-radius:10px;background:var(--paper2);display:grid;place-items:center}
+  .iconbtn.del{background:var(--dangerBg);color:var(--danger)}
+  .editbox{background:var(--matchaSoft);border:1.5px solid var(--matcha);border-radius:16px;padding:12px;margin-bottom:8px;
+    display:flex;flex-direction:column;gap:8px}
+  .editbox input,.editbox select{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:9px 12px;color:var(--ink);outline:none;width:100%}
+  .editbox .row{display:flex;gap:8px}
+  .savebtn{padding:0 16px;border-radius:10px;font-weight:700;background:var(--matcha);color:#fff;display:flex;align-items:center;gap:5px}
+  .cancelbtn{padding:0 12px;border-radius:10px;background:var(--white);border:1px solid var(--line);display:grid;place-items:center}
+
+  /* Umsatz */
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+  .stat{border-radius:18px;padding:16px;background:var(--white);border:1px solid var(--line)}
+  .stat.big{background:var(--matchaDeep);border-color:var(--matchaDeep);color:#fff}
+  .stat .l{font-size:14px;color:var(--inkSoft);margin-bottom:4px}
+  .stat.big .l{color:var(--matchaSoft)}
+  .stat .v{font-size:26px;font-weight:800}
+  .stat.big .v{font-size:30px;color:#fff}
+  .sold{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+  .sold .emo{font-size:20px}
+  .sold .nm{flex:1;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sold .q{padding:2px 8px;border-radius:7px;font-size:14px;font-weight:800;background:var(--matchaSoft);color:var(--matchaDeep)}
+  .sold .s{width:80px;text-align:right;font-weight:700}
+  .histrow{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--paper2)}
+  .histrow .tm{font-size:14px;color:var(--inkSoft)}
+  .histrow .it{flex:1;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .histrow .tt{font-weight:800}
+
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:96px;z-index:60;
+    background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:12px;
+    font-size:14px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.25);
+    opacity:0;pointer-events:none;transition:opacity .2s ease}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+"use strict";
+
+/* ---------------- Dữ liệu ---------------- */
+var CATS = ["Vietnamese Drinks","Matcha","Special Drinks"];
+var DEFAULT_MENU = [
+  {id:"v1",emoji:"🍋",name:"Limonade",price:6.0,cat:"Vietnamese Drinks"},
+  {id:"v2",emoji:"🫖",name:"Jasmin Iced Tea",price:6.0,cat:"Vietnamese Drinks"},
+  {id:"v3",emoji:"🧊",name:"Vietnamese Iced Coffee",price:6.0,cat:"Vietnamese Drinks"},
+  {id:"v4",emoji:"🥥",name:"Vietnamese Coconut Coffee",price:7.5,cat:"Vietnamese Drinks"},
+  {id:"v5",emoji:"🧂",name:"Vietnamese Salted Coffee",price:7.5,cat:"Vietnamese Drinks"},
+  {id:"ma1",emoji:"🍵",name:"Matcha Latte",price:6.0,cat:"Matcha"},
+  {id:"ma2",emoji:"✨",name:"Matcha Premium",price:8.5,cat:"Matcha"},
+  {id:"ma3",emoji:"☁️",name:"Matcha Cocos Cloud",price:8.5,cat:"Matcha"},
+  {id:"ma4",emoji:"☁️",name:"Matcha Jasmin Cloud",price:8.5,cat:"Matcha"},
+  {id:"s1",emoji:"🍓",name:"Strawberry Iced Tea",price:8.5,cat:"Special Drinks"},
+  {id:"s2",emoji:"🥭",name:"Mango Maja Iced Tea",price:8.5,cat:"Special Drinks"},
+  {id:"s3",emoji:"🫧",name:"Kombucha Holunder Lychee",price:7.0,cat:"Special Drinks"},
+  {id:"s4",emoji:"🫧",name:"Kombucha Holunder Maja",price:7.0,cat:"Special Drinks"}
+];
+
+var LS = "kasse:standalone:v2";
+var state = {tab:"kasse", menu:[], sales:[], cart:{}, paid:"", pay:"Bar", cartOpen:false, editId:null};
+
+/* ---------------- Tiện ích ---------------- */
+var fmt = new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR"});
+function eur(n){ return fmt.format(n||0); }
+function parseMoney(s){
+  if(typeof s!=="string") return Number(s)||0;
+  var v=parseFloat(s.replace(/\s/g,"").replace(",","."));
+  return isNaN(v)?0:v;
+}
+function uid(){ return Math.random().toString(36).slice(2,9); }
+function todayKey(){ return new Date().toISOString().slice(0,10); }
+function esc(s){ return String(s).replace(/[&<>"']/g,function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]; }); }
+
+function load(){
+  try{
+    var raw=localStorage.getItem(LS);
+    if(raw){ var o=JSON.parse(raw);
+      state.menu = Array.isArray(o.menu)? o.menu : DEFAULT_MENU.slice();
+      state.sales= Array.isArray(o.sales)? o.sales : [];
+      return;
+    }
+  }catch(e){}
+  state.menu = DEFAULT_MENU.slice();
+  state.sales = [];
+}
+function persist(){
+  try{ localStorage.setItem(LS, JSON.stringify({menu:state.menu, sales:state.sales})); }catch(e){}
+}
+
+/* ---------------- Tính toán giỏ ---------------- */
+function cartLines(){
+  var out=[];
+  for(var id in state.cart){
+    var p=state.menu.find(function(m){return m.id===id;});
+    if(p) out.push({id:id,emoji:p.emoji,name:p.name,price:p.price,qty:state.cart[id],sum:p.price*state.cart[id]});
+  }
+  return out;
+}
+function cartTotal(){ return cartLines().reduce(function(a,l){return a+l.sum;},0); }
+function cartCount(){ var c=0; for(var id in state.cart) c+=state.cart[id]; return c; }
+
+/* ---------------- Render khung ---------------- */
+var els={};
+function shell(){
+  document.getElementById("root").innerHTML =
+  '<header><div class="hrow">'
+  + '<div class="brand"><div class="logo">🍃</div><div><h1>Kasse</h1><small>Quầy đồ uống · €</small></div></div>'
+  + '<nav class="tabs" id="tabs">'
+  +   tabBtn("kasse","Bán","☕")
+  +   tabBtn("menu","Menu","✏️")
+  +   tabBtn("umsatz","Doanh thu","🧾")
+  + '</nav></div></header>'
+  + '<main id="view"></main>'
+  + '<button class="bar" id="bar"><div class="bar-in">'
+  +   '<div class="bar-l"><span class="cbadge">🛍️<i id="cbadge" style="display:none">0</i></span>'
+  +   '<span id="barlabel">Chưa có đồ uống</span></div>'
+  +   '<span class="sum" id="barsum">'+eur(0)+'</span></div></button>'
+  + '<div class="overlay" id="overlay"></div>'
+  + '<div class="sheet" id="sheet"></div>'
+  + '<div class="toast" id="toast"></div>';
+
+  els.view=document.getElementById("view");
+  els.bar=document.getElementById("bar");
+  els.overlay=document.getElementById("overlay");
+  els.sheet=document.getElementById("sheet");
+  els.toast=document.getElementById("toast");
+
+  document.getElementById("tabs").addEventListener("click",function(e){
+    var b=e.target.closest("[data-tab]"); if(!b) return;
+    state.tab=b.getAttribute("data-tab"); state.editId=null;
+    renderTabs(); renderView(); updateBar();
+  });
+  els.bar.addEventListener("click",function(){ if(cartCount()>0) openSheet(); });
+  els.overlay.addEventListener("click",closeSheet);
+}
+function tabBtn(k,label,emo){
+  return '<button class="tab" data-tab="'+k+'"><span>'+emo+'</span><span class="lbl">'+label+'</span></button>';
+}
+function renderTabs(){
+  var btns=document.querySelectorAll("#tabs .tab");
+  btns.forEach(function(b){ b.classList.toggle("active", b.getAttribute("data-tab")===state.tab); });
+}
+
+/* ---------------- Tab Bán ---------------- */
+function renderView(){
+  els.bar.style.display = state.tab==="kasse" ? "" : "none";
+  if(state.tab==="kasse") renderProducts();
+  else if(state.tab==="menu") renderMenu();
+  else renderUmsatz();
+}
+function renderProducts(){
+  if(state.menu.length===0){
+    els.view.innerHTML='<div class="empty"><div style="font-size:46px">🍵</div><div style="font-weight:800;font-size:18px;color:var(--ink)">Menu đang trống</div><div>Mở tab Menu để thêm đồ uống.</div></div>';
+    return;
+  }
+  var order=CATS.slice();
+  state.menu.forEach(function(m){ var c=m.cat||"Khác"; if(order.indexOf(c)<0) order.push(c); });
+  var html="";
+  order.forEach(function(cat){
+    var items=state.menu.filter(function(m){return (m.cat||"Khác")===cat;});
+    if(!items.length) return;
+    html+='<section class="group"><div class="group-h"><span>'+esc(cat)+'</span><div class="rule"></div></div><div class="grid">';
+    items.forEach(function(p){
+      var q=state.cart[p.id]||0;
+      html+='<button class="prod pop'+(q>0?' active':'')+'" data-add="'+p.id+'">'
+        + (q>0?'<span class="badge">'+q+'</span>':'')
+        + '<span class="emo">'+esc(p.emoji||"🥤")+'</span>'
+        + '<span class="nm">'+esc(p.name)+'</span>'
+        + '<span class="pr tnum">'+eur(p.price)+'</span></button>';
+    });
+    html+='</div></section>';
+  });
+  els.view.innerHTML=html;
+  els.view.querySelectorAll("[data-add]").forEach(function(b){
+    b.addEventListener("click",function(){
+      var id=b.getAttribute("data-add");
+      state.cart[id]=(state.cart[id]||0)+1;
+      renderProducts(); updateBar(); if(state.cartOpen) fillSheet();
+    });
+  });
+}
+function updateBar(){
+  if(state.tab!=="kasse") return;
+  var n=cartCount(), t=cartTotal();
+  els.bar.classList.toggle("off", n===0);
+  document.getElementById("barsum").textContent=eur(t);
+  document.getElementById("barlabel").textContent = n===0?"Chưa có đồ uống":"Xem giỏ & thanh toán";
+  var bd=document.getElementById("cbadge");
+  bd.style.display = n>0?"":"none"; bd.textContent=n;
+}
+
+/* ---------------- Sheet thanh toán ---------------- */
+function quickAmounts(total){
+  var s=[]; var seen={};
+  function push(v){ v=Math.round(v*100)/100; if(v>0 && !seen[v]){seen[v]=1; s.push(v);} }
+  push(Math.ceil(total));
+  push(Math.ceil(total/5)*5);
+  [5,10,20,50].forEach(function(v){ if(v>=total) push(v); });
+  s.sort(function(a,b){return a-b;});
+  return s.slice(0,4);
+}
+function fillSheet(){
+  var lines=cartLines(), total=cartTotal();
+  var html='<div class="sheet-in"><div class="grab"></div>'
+    + '<div class="sheet-h"><h2>Giỏ hàng</h2><div class="acts">'
+    + (lines.length?'<button class="ghost pop" data-act="clear">🗑️ Xóa hết</button>':'')
+    + '<button class="xbtn pop" data-act="close">✕</button></div></div>';
+
+  html+='<div class="lines">';
+  if(!lines.length){
+    html+='<p class="empty">Giỏ trống. Chạm vào đồ uống để thêm.</p>';
+  }else{
+    lines.forEach(function(l){
+      html+='<div class="line"><span class="emo">'+esc(l.emoji||"🥤")+'</span>'
+        + '<div class="info"><div class="nm">'+esc(l.name)+'</div>'
+        + '<div class="sub tnum">'+eur(l.price)+' × '+l.qty+' = <b style="color:var(--ink)">'+eur(l.sum)+'</b></div></div>'
+        + '<div class="step"><button class="sbtn pop" data-dec="'+l.id+'">−</button>'
+        + '<span class="q tnum">'+l.qty+'</span>'
+        + '<button class="sbtn pri pop" data-inc="'+l.id+'">+</button></div></div>';
+    });
+  }
+  html+='</div>';
+
+  if(lines.length){
+    html+='<div class="paymethod">'
+      + '<button class="pm pop'+(state.pay==="Bar"?" on":"")+'" data-pm="Bar"><span class="ic">💶</span>Bar</button>'
+      + '<button class="pm pp pop'+(state.pay==="PayPal"?" on pp":"")+'" data-pm="PayPal"><span class="ic">🅿️</span>PayPal</button>'
+      + '</div>';
+    if(state.pay==="Bar"){
+      var qs=quickAmounts(total);
+      html+='<div class="pay"><div class="pay-h"><span class="lbl">Khách đưa</span><div class="quick">';
+      qs.forEach(function(v){ html+='<button class="qbtn pop" data-quick="'+v+'">'+eur(v)+'</button>'; });
+      html+='</div></div>'
+        + '<div class="payin"><input id="paidin" inputmode="decimal" placeholder="0,00" value="'+esc(state.paid)+'"><span class="eu">€</span></div>'
+        + '<div id="changewrap"></div></div>';
+    }else{
+      html+='<div class="paypal-note"><span>🅿️</span><span>Khách thanh toán qua PayPal · '+eur(total)+'</span></div>';
+    }
+  }
+
+  html+='<div class="foot"><div class="total-row"><span class="t">Tổng cộng</span><span class="v tnum">'+eur(total)+'</span></div>'
+    + '<button class="complete pop" data-act="complete"'+(lines.length?'':' disabled')+'>✓ Hoàn tất bán hàng</button></div>';
+
+  html+='</div>';
+  els.sheet.innerHTML=html;
+
+  // sự kiện trong sheet
+  els.sheet.querySelectorAll("[data-inc]").forEach(function(b){
+    b.addEventListener("click",function(){ var id=b.getAttribute("data-inc");
+      state.cart[id]=(state.cart[id]||0)+1; afterCartChange(); });
+  });
+  els.sheet.querySelectorAll("[data-dec]").forEach(function(b){
+    b.addEventListener("click",function(){ var id=b.getAttribute("data-dec");
+      var q=(state.cart[id]||0)-1; if(q<=0) delete state.cart[id]; else state.cart[id]=q; afterCartChange(); });
+  });
+  els.sheet.querySelectorAll("[data-quick]").forEach(function(b){
+    b.addEventListener("click",function(){ state.paid=String(b.getAttribute("data-quick")).replace(".",",");
+      var inp=document.getElementById("paidin"); if(inp) inp.value=state.paid; renderChange(); });
+  });
+  els.sheet.querySelectorAll("[data-pm]").forEach(function(b){
+    b.addEventListener("click",function(){ state.pay=b.getAttribute("data-pm"); fillSheet(); });
+  });
+  var act=els.sheet.querySelector('[data-act="close"]'); if(act) act.addEventListener("click",closeSheet);
+  var cl=els.sheet.querySelector('[data-act="clear"]'); if(cl) cl.addEventListener("click",function(){
+    state.cart={}; state.paid=""; afterCartChange(); });
+  var cp=els.sheet.querySelector('[data-act="complete"]'); if(cp) cp.addEventListener("click",complete);
+  var paidin=document.getElementById("paidin");
+  if(paidin) paidin.addEventListener("input",function(){ state.paid=paidin.value; renderChange(); });
+
+  renderChange();
+}
+function renderChange(){
+  var wrap=document.getElementById("changewrap"); if(!wrap) return;
+  if(state.paid===""){ wrap.innerHTML=""; return; }
+  var diff=parseMoney(state.paid)-cartTotal();
+  wrap.innerHTML='<div class="change'+(diff<0?' neg':'')+'"><span>Tiền thối</span><b class="tnum">'
+    + (diff>=0?eur(diff):"Thiếu "+eur(-diff))+'</b></div>';
+}
+function afterCartChange(){
+  renderProducts(); updateBar();
+  if(cartCount()===0){ closeSheet(); return; }
+  fillSheet();
+}
+function openSheet(){
+  state.cartOpen=true; state.pay="Bar"; fillSheet();
+  els.overlay.classList.add("open");
+  var raf=window.requestAnimationFrame||function(f){return setTimeout(f,16);};
+  raf(function(){ els.sheet.classList.add("open"); });
+}
+function closeSheet(){
+  state.cartOpen=false;
+  els.sheet.classList.remove("open");
+  els.overlay.classList.remove("open");
+}
+function complete(){
+  var lines=cartLines(); if(!lines.length) return;
+  var total=cartTotal();
+  var isPaypal = state.pay==="PayPal";
+  var paidNum = isPaypal ? total : (state.paid? parseMoney(state.paid) : total);
+  state.sales.unshift({
+    id:uid(), time:new Date().toISOString(), method:state.pay,
+    items:lines.map(function(l){return {name:l.name,emoji:l.emoji,price:l.price,qty:l.qty};}),
+    total:total, paid:paidNum, change:isPaypal?0:Math.max(0,paidNum-total)
+  });
+  persist();
+  state.cart={}; state.paid="";
+  closeSheet();
+  renderProducts(); updateBar();
+  toast("Đã ghi "+(isPaypal?"PayPal":"tiền mặt")+" · "+eur(total));
+}
+
+/* ---------------- Tab Menu ---------------- */
+function renderMenu(){
+  var html='<div class="card"><h3>Thêm đồ uống</h3>'
+    + '<div class="field"><input class="emoin" id="ad_emoji" value="🥤"><input id="ad_name" placeholder="Tên đồ uống"></div>'
+    + '<div class="field"><select id="ad_cat">'+CATS.map(function(c){return '<option>'+esc(c)+'</option>';}).join("")+'</select></div>'
+    + '<div class="field"><div class="pricebox"><input id="ad_price" inputmode="decimal" placeholder="0,00"><span class="eu">€</span></div>'
+    + '<button class="addbtn pop" id="ad_add">＋ Thêm</button></div></div>';
+
+  html+='<div id="mlist"></div>';
+  els.view.innerHTML=html;
+  document.getElementById("ad_add").addEventListener("click",function(){
+    var name=document.getElementById("ad_name").value.trim(); if(!name) return;
+    state.menu.push({id:uid(),
+      emoji:(document.getElementById("ad_emoji").value.trim()||"🥤"),
+      name:name, price:parseMoney(document.getElementById("ad_price").value),
+      cat:document.getElementById("ad_cat").value});
+    persist();
+    document.getElementById("ad_name").value=""; document.getElementById("ad_price").value="";
+    document.getElementById("ad_emoji").value="🥤";
+    renderMlist(); toast("Đã thêm đồ uống");
+  });
+  renderMlist();
+}
+function renderMlist(){
+  var box=document.getElementById("mlist"); if(!box) return;
+  var html="";
+  state.menu.forEach(function(p){
+    if(state.editId===p.id){
+      html+='<div class="editbox" data-edit="'+p.id+'">'
+        + '<div class="row"><input class="emoin" data-f="emoji" value="'+esc(p.emoji)+'" style="flex:none">'
+        + '<input data-f="name" value="'+esc(p.name)+'"></div>'
+        + '<select data-f="cat">'+CATS.map(function(c){return '<option'+(c===p.cat?' selected':'')+'>'+esc(c)+'</option>';}).join("")+'</select>'
+        + '<div class="row"><div class="pricebox" style="flex:1"><input data-f="price" inputmode="decimal" value="'
+          + esc(String(p.price).replace(".",","))+'" style="border:none;background:none"><span class="eu">€</span></div>'
+        + '<button class="savebtn pop" data-save="'+p.id+'">✓ Lưu</button>'
+        + '<button class="cancelbtn pop" data-cancel="1">✕</button></div></div>';
+    }else{
+      html+='<div class="mrow"><span class="emo">'+esc(p.emoji||"🥤")+'</span>'
+        + '<div class="info"><div class="nm">'+esc(p.name)+'</div><div class="cat">'+esc(p.cat||"Khác")+'</div></div>'
+        + '<span class="pr tnum">'+eur(p.price)+'</span>'
+        + '<button class="iconbtn pop" data-medit="'+p.id+'">✏️</button>'
+        + '<button class="iconbtn del pop" data-mdel="'+p.id+'">🗑️</button></div>';
+    }
+  });
+  box.innerHTML=html;
+  box.querySelectorAll("[data-medit]").forEach(function(b){
+    b.addEventListener("click",function(){ state.editId=b.getAttribute("data-medit"); renderMlist(); });
+  });
+  box.querySelectorAll("[data-mdel]").forEach(function(b){
+    b.addEventListener("click",function(){ var id=b.getAttribute("data-mdel");
+      state.menu=state.menu.filter(function(x){return x.id!==id;}); persist(); renderMlist(); toast("Đã xóa"); });
+  });
+  box.querySelectorAll("[data-cancel]").forEach(function(b){
+    b.addEventListener("click",function(){ state.editId=null; renderMlist(); });
+  });
+  box.querySelectorAll("[data-save]").forEach(function(b){
+    b.addEventListener("click",function(){
+      var id=b.getAttribute("data-save");
+      var wrap=box.querySelector('[data-edit="'+id+'"]');
+      var get=function(f){ return wrap.querySelector('[data-f="'+f+'"]').value; };
+      state.menu=state.menu.map(function(p){
+        if(p.id!==id) return p;
+        return {id:id, emoji:(get("emoji").trim()||"🥤"), name:(get("name").trim()||p.name),
+                price:parseMoney(get("price")), cat:get("cat")};
+      });
+      persist(); state.editId=null; renderMlist();
+    });
+  });
+}
+
+/* ---------------- Tab Doanh thu ---------------- */
+function renderUmsatz(){
+  var today=todayKey();
+  var ts=state.sales.filter(function(s){return s.time.slice(0,10)===today;});
+  var revenue=ts.reduce(function(a,s){return a+s.total;},0);
+  var barSum=ts.filter(function(s){return s.method!=="PayPal";}).reduce(function(a,s){return a+s.total;},0);
+  var ppSum=ts.filter(function(s){return s.method==="PayPal";}).reduce(function(a,s){return a+s.total;},0);
+
+  var map={};
+  ts.forEach(function(s){ s.items.forEach(function(it){
+    if(!map[it.name]) map[it.name]={name:it.name,emoji:it.emoji,qty:0,sum:0};
+    map[it.name].qty+=it.qty; map[it.name].sum+=it.price*it.qty;
+  });});
+  var sold=Object.keys(map).map(function(k){return map[k];}).sort(function(a,b){return b.qty-a.qty;});
+
+  var html='<div class="stats">'
+    + '<div class="stat big"><div class="l">Doanh thu hôm nay</div><div class="v tnum">'+eur(revenue)+'</div></div>'
+    + '<div class="stat"><div class="l">Số lần bán</div><div class="v tnum">'+ts.length+'</div></div>'
+    + '<div class="stat"><div class="l">💶 Tiền mặt (Bar)</div><div class="v tnum">'+eur(barSum)+'</div></div>'
+    + '<div class="stat"><div class="l">🅿️ PayPal</div><div class="v tnum">'+eur(ppSum)+'</div></div></div>';
+
+  if(sold.length){
+    html+='<div class="card"><h3>Đã bán hôm nay</h3>';
+    sold.forEach(function(it){
+      html+='<div class="sold"><span class="emo">'+esc(it.emoji||"🥤")+'</span>'
+        + '<span class="nm">'+esc(it.name)+'</span>'
+        + '<span class="q tnum">×'+it.qty+'</span>'
+        + '<span class="s tnum">'+eur(it.sum)+'</span></div>';
+    });
+    html+='</div>';
+  }
+
+  html+='<div class="card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+    + '<h3 style="margin:0">Lịch sử bán</h3>'
+    + (ts.length?'<button class="ghost pop" id="resetday">↺ Xóa ngày</button>':'')+'</div>';
+  if(!ts.length){
+    html+='<p class="empty" style="padding:24px 0">Chưa có giao dịch nào hôm nay.</p>';
+  }else{
+    ts.forEach(function(s){
+      var tm=new Date(s.time).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+      var items=s.items.map(function(it){return it.qty+"× "+it.name;}).join(", ");
+      var pp=s.method==="PayPal";
+      var tag='<span class="tag '+(pp?"pp":"bar")+'">'+(pp?"PayPal":"Bar")+'</span>';
+      html+='<div class="histrow"><span class="tm tnum">'+tm+'</span>'+tag
+        +'<span class="it">'+esc(items)+'</span><span class="tt tnum">'+eur(s.total)+'</span></div>';
+    });
+  }
+  html+='</div>';
+  els.view.innerHTML=html;
+
+  var rd=document.getElementById("resetday");
+  if(rd) rd.addEventListener("click",function(){
+    if(!confirm("Xóa toàn bộ doanh thu hôm nay? Không thể hoàn tác.")) return;
+    state.sales=state.sales.filter(function(x){return x.time.slice(0,10)!==today;});
+    persist(); renderUmsatz(); toast("Đã xóa doanh thu hôm nay");
+  });
+}
+
+/* ---------------- Toast ---------------- */
+var toastT=null;
+function toast(msg){
+  els.toast.textContent=msg; els.toast.classList.add("show");
+  clearTimeout(toastT); toastT=setTimeout(function(){ els.toast.classList.remove("show"); },2200);
+}
+
+/* ---------------- Icon + manifest (cho 'Thêm vào màn hình chính') ---------------- */
+function setupIcons(){
+  var svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">'
+    +'<rect width="512" height="512" rx="112" fill="#3E5826"/>'
+    +'<circle cx="256" cy="256" r="150" fill="#E5EDD7"/>'
+    +'<path d="M256 168c-44 0-80 30-80 78 0 44 36 80 80 80s80-36 80-80c0-48-36-78-80-78z" fill="#5B7B3A"/>'
+    +'<path d="M256 150c10 28 10 56 0 84-10-28-10-56 0-84z" fill="#3E5826"/></svg>';
+  var data="data:image/svg+xml,"+encodeURIComponent(svg);
+  var at=document.querySelector('link[rel=apple-touch-icon]'); if(at) at.href=data;
+  try{
+    var manifest={name:"Kasse",short_name:"Kasse",display:"standalone",
+      background_color:"#F7F4EC",theme_color:"#3E5826",start_url:".",
+      icons:[{src:data,sizes:"512x512",type:"image/svg+xml",purpose:"any"}]};
+    var blob=new Blob([JSON.stringify(manifest)],{type:"application/manifest+json"});
+    var ml=document.querySelector('link[rel=manifest]'); if(ml) ml.href=URL.createObjectURL(blob);
+  }catch(e){}
+}
+
+/* ---------------- Khởi động ---------------- */
+load();
+shell();
+setupIcons();
+renderTabs();
+renderView();
+updateBar();
+</script>
+</body>
+</html>
